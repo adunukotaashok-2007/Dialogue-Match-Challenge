@@ -28,7 +28,12 @@ const socketHandler = new SocketHandler(io, gameManager);
 socketHandler.initialize();
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', rooms: gameManager.getRoomCount(), players: gameManager.getPlayerCount() });
+  res.json({ 
+    status: 'ok', 
+    rooms: gameManager.getRoomCount(), 
+    players: gameManager.getPlayerCount(),
+    uptime: process.uptime()
+  });
 });
 
 app.get('*', (req, res) => {
@@ -37,6 +42,10 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🎮 Dialogue Match Challenge server running on port ${PORT}`);
-  console.log(`   Open http://localhost:${PORT} in your browser`);
+  console.log('╔════════════════════════════════════════════╗');
+  console.log('║  🎤 Dialogue Match Challenge Server        ║');
+  console.log('╠════════════════════════════════════════════╣');
+  console.log(`║  🚀 Running on port ${PORT}                   ║`);
+  console.log(`║  🌐 http://localhost:${PORT}                  ║`);
+  console.log('╚════════════════════════════════════════════╝');
 });
