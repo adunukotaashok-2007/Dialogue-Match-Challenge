@@ -13,7 +13,7 @@ class SocketHandler {
       socket.on('join-room', (data, callback) => this.handleJoinRoom(socket, data, callback));
       socket.on('player-ready', (data) => this.handlePlayerReady(socket, data));
       socket.on('start-game', () => this.handleStartGame(socket));
-      socket.on('request-next-round', () => this.handleNextRound(socket));
+      socket.on('request-next-round', (data) => this.handleNextRound(socket, data));
       socket.on('player-listened', () => this.handlePlayerListened(socket));
       socket.on('player-prepared', () => this.handlePlayerPrepared(socket));
       socket.on('submit-result', (data) => this.handleSubmitResult(socket, data));
@@ -109,20 +109,34 @@ class SocketHandler {
     
     this.io.to(room.id).emit('game-started', { room: room.toJSON() });
     
-    // Auto-start first round after short delay
+    // Instead of auto-starting, ask host to pick the first dialogue
     setTimeout(() => {
-      this.startNextRound(room);
-    }, 2000);
+      this.io.to(room.id).emit('waiting-for-dialogue', {
+        host: room.host,
+        roundNumber: 1,
+        totalRounds: room.totalRounds,
+        room: room.toJSON()
+      });
+    }, 1500);
   }
 
-  handleNextRound(socket) {
+  handleNextRound(socket, data) {
     const room = this.gm.getRoomBySocket(socket.id);
-    if (!room) return;
-    this.startNextRound(room);
+    const player = this.gm.getPlayerBySocket(socket.id);
+    if (!room || !player) return;
+    
+    // Only host can start next round
+    if (player.id !== room.host) {
+      socket.emit('error-message', { message: 'Only the host can start the next round' });
+      return;
+    }
+    
+    const customText = data && data.customDialogue ? data.customDialogue : null;
+    this.startNextRound(room, customText);
   }
 
-  startNextRound(room) {
-    const round = room.startNextRound();
+  startNextRound(room, customDialogueText = null) {
+    const round = room.startNextRound(customDialogueText);
     
     if (!round) {
       // Game finished
@@ -288,11 +302,14 @@ class SocketHandler {
     
     room.currentRound.status = 'complete';
     
+    const isLastRound = room.isLastRound();
+    
     this.io.to(room.id).emit('round-finished', {
       roundResults: room.currentRound.getResults(),
       leaderboard: room.getLeaderboard(),
       room: room.toJSON(),
-      isLastRound: room.gameMode !== 'endless' && room.roundNumber >= room.totalRounds
+      isLastRound: isLastRound,
+      nextRoundNumber: room.roundNumber + 1
     });
   }
 
