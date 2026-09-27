@@ -77,7 +77,7 @@ class Room {
   }
 
   allPlayersReady() {
-    return this.players.length >= 2 && this.players.every(p => p.isReady || p.isHost);
+    return this.players.length >= 1 && this.players.every(p => p.isReady || p.isHost);
   }
 
   getConnectedPlayers() {
@@ -85,8 +85,8 @@ class Room {
   }
 
   startGame() {
-    if (this.players.length < 2) {
-      return { success: false, error: 'Need at least 2 players' };
+    if (this.players.length < 1) {
+      return { success: false, error: 'Need at least 1 player' };
     }
     this.status = 'playing';
     this.roundNumber = 0;
@@ -95,14 +95,20 @@ class Room {
     return { success: true };
   }
 
-  startNextRound() {
+  startNextRound(customDialogueText = null) {
     this.roundNumber++;
     if (this.gameMode !== 'endless' && this.roundNumber > this.totalRounds) {
       this.status = 'finished';
       return null;
     }
     
-    const dialogue = this.dialogueManager.getRandomDialogue(this.language);
+    let dialogue;
+    if (customDialogueText && customDialogueText.trim().length > 0) {
+      dialogue = this.dialogueManager.createCustomDialogue(customDialogueText, 'host');
+    } else {
+      dialogue = this.dialogueManager.getRandomDialogue(this.language);
+    }
+    
     const connectedPlayers = this.getConnectedPlayers();
     this.currentRound = new Round(this.roundNumber, dialogue, connectedPlayers);
     this.currentRound.status = 'listening';
@@ -155,6 +161,10 @@ class Room {
   getWinner() {
     const leaderboard = this.getLeaderboard();
     return leaderboard.length > 0 ? leaderboard[0] : null;
+  }
+
+  isLastRound() {
+    return this.gameMode !== 'endless' && this.roundNumber >= this.totalRounds;
   }
 
   toJSON() {
