@@ -1,15 +1,25 @@
 {
   "name": "dialogue-match-challenge",
-  "version": "1.0.0",
-  "description": "A modern multiplayer voice challenge game where players compete to reproduce dialogues",
+  "version": "1.1.0",
+  "description": "A modern multiplayer voice challenge game where the host picks dialogues and players compete to reproduce them",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
     "dev": "nodemon server/index.js"
   },
-  "keywords": ["multiplayer", "voice", "game", "speech-recognition", "websocket"],
+  "keywords": [
+    "multiplayer",
+    "voice",
+    "game",
+    "speech-recognition",
+    "websocket",
+    "socket.io"
+  ],
   "author": "Dialogue Match Challenge Team",
   "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.7.4",
