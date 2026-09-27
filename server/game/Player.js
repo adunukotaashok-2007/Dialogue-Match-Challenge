@@ -21,11 +21,14 @@ class Player {
     
     this.currentTurnData = null;
     this.disconnectedAt = null;
+    this.joinedAt = Date.now();
   }
 
   getRandomAvatar() {
-    const avatars = ['🎤','🎵','🎶','🎸','🎹','🥁','🎺','🎻','🎼','🎧',
-                     '🦊','🐱','🐶','🐸','🦁','🐼','🐨','🐯','🦄','🐲'];
+    const avatars = [
+      '🎤','🎵','🎶','🎸','🎹','🥁','🎺','🎻','🎼','🎧',
+      '🦊','🐱','🐶','🐸','🦁','🐼','🐨','🐯','🦄','🐲'
+    ];
     return avatars[Math.floor(Math.random() * avatars.length)];
   }
 
@@ -33,7 +36,9 @@ class Player {
     this.scores.roundScores.push(matchPercentage);
     this.scores.currentRoundScore = matchPercentage;
     this.scores.totalScore = this.scores.roundScores.reduce((a, b) => a + b, 0);
-    this.scores.averageMatch = Math.round(this.scores.totalScore / this.scores.roundScores.length);
+    this.scores.averageMatch = Math.round(
+      this.scores.totalScore / this.scores.roundScores.length
+    );
     if (matchPercentage > this.scores.bestPerformance) {
       this.scores.bestPerformance = matchPercentage;
     }
