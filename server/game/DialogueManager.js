@@ -66,6 +66,17 @@ class DialogueManager {
     return { ...dialogue, source: 'system' };
   }
 
+  createCustomDialogue(text, addedBy = 'host') {
+    return {
+      id: Date.now(),
+      text: text.trim(),
+      difficulty: this.estimateDifficulty(text),
+      category: 'host-selected',
+      source: 'host',
+      addedBy
+    };
+  }
+
   addCustomDialogue(text, language, addedBy) {
     const dialogue = {
       id: Date.now(),
