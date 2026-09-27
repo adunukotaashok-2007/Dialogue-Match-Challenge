@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dialogue Match Challenge 🎤</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎤</text></svg>">
+</head>
+<body>
+  <!-- ===== PARTICLES BACKGROUND ===== -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- ===== NOTIFICATION CONTAINER ===== -->
+  <div id="notification-container"></div>
+
+  <!-- ===== SCREEN: MAIN MENU ===== -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-container">
+      <div class="logo-container">
+        <div class="logo-icon">🎤</div>
+        <h1 class="game-title">Dialogue Match<br><span>Challenge</span></h1>
+        <p class="tagline" data-i18n="tagline">Speak. Match. Win.</p>
+      </div>
+      
+      <div class="menu-form">
+        <div class="input-group">
+          <label data-i18n="yourName">Your Name</label>
+          <input type="text" id="player-name" maxlength="20" placeholder="Enter your name...">
+        </div>
+        
+        <div class="avatar-selector">
+          <label data-i18n="chooseAvatar">Choose Avatar</label>
+          <div class="avatar-grid" id="avatar-grid"></div>
+        </div>
+        
+        <div class="language-selector">
+          <label data-i18n="language">Language</label>
+          <div class="lang-buttons">
+            <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+            <button class="lang-btn" data-lang="te">🇮🇳 Telugu</button>
+          </div>
+        </div>
+        
+        <div class="menu-buttons">
+          <button class="btn btn-primary btn-large" id="btn-create-room">
+            <span class="btn-icon">🏠</span>
+            <span data-i18n="createRoom">Create Room</span>
+          </button>
+          <button class="btn btn-secondary btn-large" id="btn-join-room">
+            <span class="btn-icon">🚪</span>
+            <span data-i18n="joinRoom">Join Room</span>
+          </button>
+        </div>
+        
+        <div class="join-form hidden" id="join-form">
+          <div class="input-group">
+            <label data-i18n="roomCode">Room Code</label>
+            <input type="text" id="room-code-input" maxlength="6" placeholder="ABCD12" style="text-transform:uppercase">
+          </div>
+          <button class="btn btn-accent" id="btn-join-confirm">
+            <span data-i18n="join">Join</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Settings panel for host -->
+      <div class="settings-panel hidden" id="create-settings">
+        <h3 data-i18n="gameSettings">Game Settings</h3>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label data-i18n="gameMode">Game Mode</label>
+            <select id="setting-mode">
+              <option value="classic">🎯 Classic</option>
+              <option value="speed">⚡ Speed</option>
+              <option value="endless">♾️ Endless</option>
+              <option value="custom">✏️ Custom Dialogue</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label data-i18n="rounds">Rounds</label>
+            <select id="setting-rounds">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="7">7</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label data-i18n="maxPlayers">Max Players</label>
+            <select id="setting-max-players">
+              <option value="2">2</option>
+              <option value="4">4</option>
+              <option value="6" selected>6</option>
+              <option value="8">8</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label data-i18n="speakTime">Speak Time (s)</label>
+            <select id="setting-speak-time">
+              <option value="10">10</option>
+              <option value="15" selected>15</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-create-confirm">
+          <span data-i18n="createAndJoin">Create & Join</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: LOBBY ===== -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <h2 data-i18n="gameRoom">Game Room</h2>
+        <div class="room-code-display">
+          <span data-i18n="roomCodeLabel">Room Code:</span>
+          <span class="code" id="display-room-code"></span>
+          <button class="btn-icon-small" id="btn-copy-code" title="Copy Code">📋</button>
+        </div>
+      </div>
+      
+      <div class="lobby-info">
+        <div class="info-badge" id="lobby-mode-badge"></div>
+        <div class="info-badge" id="lobby-rounds-badge"></div>
+        <div class="info-badge" id="lobby-lang-badge"></div>
+      </div>
+      
+      <div class="players-grid" id="lobby-players"></div>
+      
+      <div class="lobby-actions">
+        <button class="btn btn-accent" id="btn-ready">
+          <span data-i18n="ready">Ready</span>
+        </button>
+        <button class="btn btn-primary hidden" id="btn-start-game">
+          <span data-i18n="startGame">Start Game</span>
+        </button>
+        <button class="btn btn-ghost" id="btn-leave-room">
+          <span data-i18n="leaveRoom">Leave Room</span>
+        </button>
+      </div>
+      
+      <!-- Custom dialogue input for custom mode -->
+      <div class="custom-dialogue-panel hidden" id="custom-dialogue-panel">
+        <h3 data-i18n="addDialogue">Add Custom Dialogue</h3>
+        <textarea id="custom-dialogue-input" rows="3" maxlength="200" placeholder="Type your dialogue here..."></textarea>
+        <button class="btn btn-accent" id="btn-add-dialogue">
+          <span data-i18n="addDialogueBtn">Add Dialogue</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: GAME ===== -->
+  <div id="screen-game" class="screen">
+    <div class="game-container">
+      <!-- Game HUD -->
+      <div class="game-hud">
+        <div class="hud-left">
+          <span class="hud-round" id="hud-round">Round 1/5</span>
+        </div>
+        <div class="hud-center">
+          <div class="timer-display" id="timer-display">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+              <circle class="timer-bg" cx="50" cy="50" r="45"/>
+              <circle class="timer-progress" id="timer-circle" cx="50" cy="50" r="45"/>
+            </svg>
+            <span class="timer-text" id="timer-text">10</span>
+          </div>
+        </div>
+        <div class="hud-right">
+          <div class="mini-scores" id="mini-scores"></div>
+        </div>
+      </div>
+      
+      <!-- Phase display -->
+      <div class="phase-display" id="phase-display">
+        <div class="phase-icon" id="phase-icon">🔊</div>
+        <div class="phase-text" id="phase-text">Listen to the dialogue</div>
+      </div>
+      
+      <!-- Dialogue display -->
+      <div class="dialogue-box" id="dialogue-box">
+        <div class="dialogue-label" data-i18n="dialogue">Dialogue</div>
+        <p class="dialogue-text" id="dialogue-text"></p>
+        <button class="btn btn-ghost btn-small hidden" id="btn-replay-audio">
+          🔄 <span data-i18n="replayAudio">Replay Audio</span>
+        </button>
+      </div>
+      
+      <!-- Audio Waveform -->
+      <div class="waveform-container hidden" id="waveform-container">
+        <canvas id="waveform-canvas" width="600" height="100"></canvas>
+      </div>
+      
+      <!-- Microphone area -->
+      <div class="mic-area hidden" id="mic-area">
+        <div class="mic-indicator" id="mic-indicator">
+          <div class="mic-ring ring-1"></div>
+          <div class="mic-ring ring-2"></div>
+          <div class="mic-ring ring-3"></div>
+          <div class="mic-icon">🎤</div>
+        </div>
+        <p class="mic-status" id="mic-status" data-i18n="speakNow">Speak now!</p>
+        <p class="spoken-text" id="spoken-text"></p>
+      </div>
+      
+      <!-- Current player indicator -->
+      <div class="current-player-bar" id="current-player-bar">
+        <span class="current-avatar" id="current-player-avatar"></span>
+        <span class="current-name" id="current-player-name"></span>
+        <span class="current-label" id="current-player-label" data-i18n="isSpeaking"> is speaking...</span>
+      </div>
+      
+      <!-- Waiting screen for other players -->
+      <div class="waiting-overlay hidden" id="waiting-overlay">
+        <div class="waiting-content">
+          <div class="waiting-spinner"></div>
+          <p id="waiting-text" data-i18n="waitingForTurn">Waiting for your turn...</p>
+          <div class="watching-player" id="watching-player"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: RESULT (per turn) ===== -->
+  <div id="screen-result" class="screen">
+    <div class="result-container">
+      <div class="result-header">
+        <span class="result-avatar" id="result-avatar"></span>
+        <h2 id="result-player-name"></h2>
+      </div>
+      
+      <div class="match-score-display" id="match-score-display">
+        <div class="score-circle">
+          <svg viewBox="0 0 200 200">
+            <circle class="score-bg" cx="100" cy="100" r="90"/>
+            <circle class="score-fill" id="score-circle-fill" cx="100" cy="100" r="90"/>
+          </svg>
+          <span class="score-value" id="score-value">0%</span>
+        </div>
+        <div class="score-label" id="score-label"></div>
+      </div>
+      
+      <div class="word-comparison" id="word-comparison"></div>
+      
+      <div class="spoken-result">
+        <label data-i18n="youSaid">You said:</label>
+        <p id="result-spoken-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: ROUND RESULTS ===== -->
+  <div id="screen-round-results" class="screen">
+    <div class="round-results-container">
+      <h2 id="round-results-title">Round Results</h2>
+      <div class="round-results-list" id="round-results-list"></div>
+      <div class="leaderboard-mini" id="leaderboard-mini"></div>
+      <button class="btn btn-primary btn-large hidden" id="btn-next-round">
+        <span data-i18n="nextRound">Next Round</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN: GAME OVER ===== -->
+  <div id="screen-gameover" class="screen">
+    <div class="gameover-container">
+      <div class="confetti-container" id="confetti-container"></div>
+      <div class="trophy-display">🏆</div>
+      <h1 class="winner-title" data-i18n="gameOver">Game Over!</h1>
+      <div class="winner-card" id="winner-card"></div>
+      <div class="final-leaderboard" id="final-leaderboard"></div>
+      <div class="gameover-actions">
+        <button class="btn btn-primary btn-large" id="btn-play-again">
+          <span data-i18n="playAgain">Play Again</span>
+        </button>
+        <button class="btn btn-ghost" id="btn-back-menu">
+          <span data-i18n="backToMenu">Back to Menu</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
