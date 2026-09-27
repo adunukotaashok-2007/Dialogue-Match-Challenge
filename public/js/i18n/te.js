@@ -58,5 +58,12 @@ export default {
   classicMode: "🎯 క్లాసిక్",
   speedMode: "⚡ స్పీడ్",
   endlessMode: "♾️ ఎండ్‌లెస్",
-  customMode: "✏️ కస్టమ్"
+  customMode: "✏️ కస్టమ్",
+  chooseDialogue: "తదుపరి డైలాగ్ ఎంచుకోండి",
+  pickerHint: "మీ స్వంత డైలాగ్ టైప్ చేయండి లేదా Google నుండి వెతకండి",
+  searchGoogle: "🔍 Google వెతకండి",
+  useRandom: "🎲 రాండమ్ ఉపయోగించండి",
+  startRoundWith: "▶️ ఈ డైలాగ్‌తో ప్రారంభించండి",
+  waitingForHost: "⏳ హోస్ట్ డైలాగ్ ఎంచుకోవడం కోసం వేచి ఉండండి...",
+  showFinalResults: "🏆 తుది ఫలితాలు చూపించు"
 };
