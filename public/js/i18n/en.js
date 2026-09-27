@@ -58,5 +58,12 @@ export default {
   classicMode: "🎯 Classic",
   speedMode: "⚡ Speed",
   endlessMode: "♾️ Endless",
-  customMode: "✏️ Custom"
+  customMode: "✏️ Custom",
+  chooseDialogue: "Choose the Next Dialogue",
+  pickerHint: "Type your own dialogue OR search Google for a famous line",
+  searchGoogle: "🔍 Search Google",
+  useRandom: "🎲 Use Random",
+  startRoundWith: "▶️ Start Round with This Dialogue",
+  waitingForHost: "⏳ Waiting for host to choose the next dialogue...",
+  showFinalResults: "🏆 Show Final Results"
 };
