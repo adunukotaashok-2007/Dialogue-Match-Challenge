@@ -144,15 +144,6 @@
           <span data-i18n="leaveRoom">Leave Room</span>
         </button>
       </div>
-      
-      <!-- Custom dialogue input for custom mode -->
-      <div class="custom-dialogue-panel hidden" id="custom-dialogue-panel">
-        <h3 data-i18n="addDialogue">Add Custom Dialogue</h3>
-        <textarea id="custom-dialogue-input" rows="3" maxlength="200" placeholder="Type your dialogue here..."></textarea>
-        <button class="btn btn-accent" id="btn-add-dialogue">
-          <span data-i18n="addDialogueBtn">Add Dialogue</span>
-        </button>
-      </div>
     </div>
   </div>
 
@@ -256,14 +247,55 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN: ROUND RESULTS ===== -->
+  <!-- ===== SCREEN: ROUND RESULTS + HOST DIALOGUE PICKER ===== -->
   <div id="screen-round-results" class="screen">
     <div class="round-results-container">
       <h2 id="round-results-title">Round Results</h2>
       <div class="round-results-list" id="round-results-list"></div>
       <div class="leaderboard-mini" id="leaderboard-mini"></div>
-      <button class="btn btn-primary btn-large hidden" id="btn-next-round">
-        <span data-i18n="nextRound">Next Round</span>
+      
+      <!-- Host Dialogue Picker -->
+      <div class="host-dialogue-picker hidden" id="host-dialogue-picker">
+        <h3>🎬 Choose the Next Dialogue</h3>
+        <p class="picker-hint">Type your own dialogue OR search Google for a famous line</p>
+        
+        <textarea id="host-dialogue-input" 
+                  rows="3" 
+                  maxlength="200" 
+                  placeholder="Type any dialogue here... (movie quote, song lyric, or your own sentence)"></textarea>
+        
+        <div class="picker-quick-suggestions">
+          <span class="suggestion-label">💡 Quick ideas:</span>
+          <button class="suggestion-chip" data-suggestion="I am the king of the world!">Movie</button>
+          <button class="suggestion-chip" data-suggestion="Life is like a box of chocolates.">Quote</button>
+          <button class="suggestion-chip" data-suggestion="May the force be with you.">Star Wars</button>
+          <button class="suggestion-chip" data-suggestion="Why so serious?">Joker</button>
+        </div>
+        
+        <div class="picker-actions">
+          <button class="btn btn-secondary" id="btn-search-google">
+            🔍 Search Google
+          </button>
+          <button class="btn btn-ghost" id="btn-random-dialogue">
+            🎲 Use Random
+          </button>
+        </div>
+        
+        <button class="btn btn-primary btn-large" id="btn-next-round">
+          ▶️ Start Round with This Dialogue
+        </button>
+      </div>
+      
+      <!-- Waiting for host to pick -->
+      <div class="waiting-for-host hidden" id="waiting-for-host">
+        <div class="waiting-spinner"></div>
+        <p>⏳ Waiting for host to choose the next dialogue...</p>
+        <span id="waiting-host-name" class="waiting-host-name"></span>
+      </div>
+      
+      <!-- Final results button (shown on last round) -->
+      <button class="btn btn-primary btn-large hidden" id="btn-show-final">
+        🏆 Show Final Results
       </button>
     </div>
   </div>
