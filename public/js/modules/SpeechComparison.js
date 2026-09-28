@@ -1,173 +1,791 @@
+/**
+ * SpeechComparison.js
+ * ============================================================
+ * Compares an original dialogue with the user's spoken text.
+ *
+ * Features:
+ *  - English + Telugu support
+ *  - Word-by-word comparison
+ *  - Correct / wrong / missing / extra words
+ *  - LCS-based alignment
+ *  - Match percentage
+ *  - Accuracy
+ *  - Perfect-match detection
+ *  - Similarity scoring
+ */
+
 export class SpeechComparison {
+  // ==========================================================
+  // MAIN COMPARISON
+  // ==========================================================
+
   /**
-   * Compare spoken text with original text.
-   * Returns { matchPercentage, wordComparison, details }
+   * Compare original dialogue with spoken dialogue.
+   *
+   * @param {string} original
+   * @param {string} spoken
+   *
+   * @returns {{
+   *   accuracy: number,
+   *   matchPercentage: number,
+   *   isPerfect: boolean,
+   *   wordResults: Array,
+   *   wordComparison: Array,
+   *   details: Object
+   * }}
    */
   static compare(original, spoken) {
-    if (!original || !spoken) {
-      const origWords = SpeechComparison.tokenize(original || '');
+    const originalText =
+      typeof original === "string"
+        ? original
+        : "";
+
+    const spokenText =
+      typeof spoken === "string"
+        ? spoken
+        : "";
+
+    const originalWords =
+      this.tokenize(originalText);
+
+    const spokenWords =
+      this.tokenize(spokenText);
+
+    // ========================================================
+    // EMPTY ORIGINAL
+    // ========================================================
+
+    if (originalWords.length === 0) {
+      const extraWords =
+        spokenWords.map((word) => ({
+          word,
+          status: "extra",
+          matched: false
+        }));
+
       return {
+        accuracy:
+          spokenWords.length === 0
+            ? 100
+            : 0,
+
+        matchPercentage:
+          spokenWords.length === 0
+            ? 100
+            : 0,
+
+        isPerfect:
+          spokenWords.length === 0,
+
+        wordResults: extraWords,
+
+        wordComparison: extraWords,
+
+        details: {
+          correct: 0,
+          wrong: 0,
+          missing: 0,
+          extra: spokenWords.length,
+          total: 0,
+          originalWordCount: 0,
+          spokenWordCount:
+            spokenWords.length
+        }
+      };
+    }
+
+    // ========================================================
+    // EMPTY SPOKEN TEXT
+    // ========================================================
+
+    if (spokenWords.length === 0) {
+      const missingWords =
+        originalWords.map((word) => ({
+          word,
+          status: "missing",
+          matched: false
+        }));
+
+      return {
+        accuracy: 0,
         matchPercentage: 0,
-        wordComparison: origWords.map(w => ({ word: w, status: 'missing' })),
-        details: { correct: 0, wrong: 0, missing: origWords.length, extra: 0, total: origWords.length }
+        isPerfect: false,
+
+        wordResults: missingWords,
+
+        wordComparison: missingWords,
+
+        details: {
+          correct: 0,
+          wrong: 0,
+          missing: originalWords.length,
+          extra: 0,
+          total: originalWords.length,
+          originalWordCount:
+            originalWords.length,
+          spokenWordCount: 0
+        }
       };
     }
 
-    const origWords = SpeechComparison.tokenize(original);
-    const spokenWords = SpeechComparison.tokenize(spoken);
+    // ========================================================
+    // EXACT MATCH
+    // ========================================================
 
-    if (origWords.length === 0) {
+    if (
+      this.tokensEqual(
+        originalWords,
+        spokenWords
+      )
+    ) {
+      const results =
+        originalWords.map((word) => ({
+          word,
+          status: "correct",
+          matched: true
+        }));
+
       return {
-        matchPercentage: spokenWords.length === 0 ? 100 : 0,
-        wordComparison: spokenWords.map(w => ({ word: w, status: 'extra' })),
-        details: { correct: 0, wrong: 0, missing: 0, extra: spokenWords.length, total: 0 }
+        accuracy: 100,
+        matchPercentage: 100,
+        isPerfect: true,
+
+        wordResults: results,
+
+        wordComparison: results,
+
+        details: {
+          correct: originalWords.length,
+          wrong: 0,
+          missing: 0,
+          extra: 0,
+          total: originalWords.length,
+          originalWordCount:
+            originalWords.length,
+          spokenWordCount:
+            spokenWords.length
+        }
       };
     }
 
-    // Use Longest Common Subsequence approach for alignment
-    const lcs = SpeechComparison.computeLCS(origWords, spokenWords);
-    const alignment = SpeechComparison.buildAlignment(origWords, spokenWords, lcs);
-    
+    // ========================================================
+    // LCS ALIGNMENT
+    // ========================================================
+
+    const lcs =
+      this.computeLCS(
+        originalWords,
+        spokenWords
+      );
+
+    const alignment =
+      this.buildAlignment(
+        originalWords,
+        spokenWords,
+        lcs
+      );
+
+    // ========================================================
+    // ANALYZE ALIGNMENT
+    // ========================================================
+
     let correct = 0;
     let wrong = 0;
     let missing = 0;
     let extra = 0;
+
     const wordComparison = [];
 
-    // Walk through alignment
-    let oi = 0, si = 0;
     for (const item of alignment) {
-      if (item.type === 'match') {
-        wordComparison.push({ word: origWords[item.origIdx], status: 'correct' });
+      // ------------------------------------------------------
+      // CORRECT WORD
+      // ------------------------------------------------------
+
+      if (item.type === "match") {
+        const word =
+          originalWords[item.origIdx];
+
+        wordComparison.push({
+          word,
+          status: "correct",
+          matched: true,
+          spoken:
+            spokenWords[item.spokenIdx]
+        });
+
         correct++;
-        oi++;
-        si++;
-      } else if (item.type === 'substitution') {
-        wordComparison.push({ word: origWords[item.origIdx], status: 'wrong', spoken: spokenWords[item.spokenIdx] });
+      }
+
+      // ------------------------------------------------------
+      // WRONG WORD
+      // ------------------------------------------------------
+
+      else if (
+        item.type === "substitution"
+      ) {
+        const originalWord =
+          originalWords[item.origIdx];
+
+        const spokenWord =
+          spokenWords[item.spokenIdx];
+
+        wordComparison.push({
+          word: originalWord,
+          status: "wrong",
+          matched: false,
+          spoken: spokenWord
+        });
+
         wrong++;
-        oi++;
-        si++;
-      } else if (item.type === 'deletion') {
-        wordComparison.push({ word: origWords[item.origIdx], status: 'missing' });
+      }
+
+      // ------------------------------------------------------
+      // MISSING WORD
+      // ------------------------------------------------------
+
+      else if (
+        item.type === "deletion"
+      ) {
+        const word =
+          originalWords[item.origIdx];
+
+        wordComparison.push({
+          word,
+          status: "missing",
+          matched: false
+        });
+
         missing++;
-        oi++;
-      } else if (item.type === 'insertion') {
-        wordComparison.push({ word: spokenWords[item.spokenIdx], status: 'extra' });
+      }
+
+      // ------------------------------------------------------
+      // EXTRA WORD
+      // ------------------------------------------------------
+
+      else if (
+        item.type === "insertion"
+      ) {
+        const word =
+          spokenWords[item.spokenIdx];
+
+        wordComparison.push({
+          word,
+          status: "extra",
+          matched: false
+        });
+
         extra++;
-        si++;
       }
     }
 
-    const total = origWords.length;
-    // Score: correct words get full credit; wrong words get partial; missing/extra get nothing
-    const rawScore = correct + (wrong * 0.3);
-    const penalty = extra * 0.1;
-    const score = Math.max(0, rawScore - penalty);
-    const matchPercentage = Math.min(100, Math.round((score / total) * 100));
+    // ========================================================
+    // SCORE
+    // ========================================================
+
+    const total =
+      originalWords.length;
+
+    /*
+     * Scoring:
+     *
+     * Correct word     = 1.0
+     * Wrong word       = 0.3
+     * Missing word     = 0
+     * Extra word       = -0.1
+     *
+     * This gives partial credit for a
+     * similar-but-wrong spoken word.
+     */
+
+    const rawScore =
+      correct +
+      wrong * 0.3;
+
+    const extraPenalty =
+      extra * 0.1;
+
+    const score =
+      Math.max(
+        0,
+        rawScore - extraPenalty
+      );
+
+    const matchPercentage =
+      Math.min(
+        100,
+        Math.max(
+          0,
+          Math.round(
+            (score / total) * 100
+          )
+        )
+      );
+
+    // ========================================================
+    // BASIC WORD ACCURACY
+    // ========================================================
+
+    const accuracy =
+      Math.round(
+        (correct / total) * 100
+      );
+
+    // ========================================================
+    // PERFECT MATCH
+    // ========================================================
+
+    const isPerfect =
+      correct === total &&
+      wrong === 0 &&
+      missing === 0 &&
+      extra === 0;
+
+    // ========================================================
+    // WORD RESULTS
+    // ========================================================
+
+    const wordResults =
+      wordComparison
+        .filter(
+          (item) =>
+            item.status !== "extra"
+        )
+        .map((item) => ({
+          word: item.word,
+          matched:
+            item.status === "correct",
+          status: item.status,
+          spoken: item.spoken
+        }));
+
+    // ========================================================
+    // RETURN RESULT
+    // ========================================================
 
     return {
+      accuracy,
       matchPercentage,
+      isPerfect,
+
+      wordResults,
       wordComparison,
-      details: { correct, wrong, missing, extra, total }
+
+      details: {
+        correct,
+        wrong,
+        missing,
+        extra,
+        total,
+
+        originalWordCount:
+          originalWords.length,
+
+        spokenWordCount:
+          spokenWords.length,
+
+        score
+      }
     };
   }
 
+  // ==========================================================
+  // TOKENIZE TEXT
+  // ==========================================================
+
+  /**
+   * Converts text into normalized words.
+   *
+   * Supports:
+   *  - English
+   *  - Telugu
+   *  - Unicode letters/numbers
+   */
+
   static tokenize(text) {
+    if (
+      !text ||
+      typeof text !== "string"
+    ) {
+      return [];
+    }
+
     return text
       .toLowerCase()
-      .replace(/[^\w\s\u0C00-\u0C7F]/g, '') // Keep Telugu characters
-      .split(/\s+/)
-      .filter(w => w.length > 0);
+
+      // Remove punctuation while keeping
+      // Unicode letters, numbers and spaces.
+      .replace(
+        /[^\p{L}\p{N}\s]/gu,
+        ""
+      )
+
+      // Normalize multiple spaces
+      .replace(/\s+/g, " ")
+
+      .trim()
+
+      .split(" ")
+
+      .filter(
+        (word) => word.length > 0
+      );
   }
+
+  // ==========================================================
+  // CLEAN TEXT
+  // ==========================================================
+
+  /**
+   * Backward-compatible helper.
+   */
+
+  static cleanText(text) {
+    return this.tokenize(text).join(" ");
+  }
+
+  // ==========================================================
+  // TOKEN ARRAYS EQUAL
+  // ==========================================================
+
+  static tokensEqual(a, b) {
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    for (
+      let i = 0;
+      i < a.length;
+      i++
+    ) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // ==========================================================
+  // COMPUTE LCS
+  // ==========================================================
+
+  /**
+   * Longest Common Subsequence.
+   *
+   * Returns the DP table used for alignment.
+   */
 
   static computeLCS(a, b) {
     const m = a.length;
     const n = b.length;
-    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
-    for (let i = 1; i <= m; i++) {
-      for (let j = 1; j <= n; j++) {
-        if (a[i - 1] === b[j - 1]) {
-          dp[i][j] = dp[i - 1][j - 1] + 1;
+    const dp =
+      Array.from(
+        { length: m + 1 },
+        () =>
+          new Array(n + 1).fill(0)
+      );
+
+    for (
+      let i = 1;
+      i <= m;
+      i++
+    ) {
+      for (
+        let j = 1;
+        j <= n;
+        j++
+      ) {
+        if (
+          a[i - 1] ===
+          b[j - 1]
+        ) {
+          dp[i][j] =
+            dp[i - 1][j - 1] + 1;
         } else {
-          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+          dp[i][j] =
+            Math.max(
+              dp[i - 1][j],
+              dp[i][j - 1]
+            );
         }
       }
     }
+
     return dp;
   }
 
-  static buildAlignment(origWords, spokenWords, dp) {
-    const alignment = [];
-    let i = origWords.length;
-    let j = spokenWords.length;
+  // ==========================================================
+  // BUILD ALIGNMENT
+  // ==========================================================
 
-    // Backtrack through LCS to find matches
+  /**
+   * Builds:
+   *
+   * match
+   * substitution
+   * deletion
+   * insertion
+   */
+
+  static buildAlignment(
+    originalWords,
+    spokenWords,
+    dp
+  ) {
+    const alignment = [];
+
+    let i =
+      originalWords.length;
+
+    let j =
+      spokenWords.length;
+
+    // ========================================================
+    // FIND LCS MATCHES
+    // ========================================================
+
     const lcsItems = [];
-    while (i > 0 && j > 0) {
-      if (origWords[i - 1] === spokenWords[j - 1]) {
-        lcsItems.unshift({ origIdx: i - 1, spokenIdx: j - 1 });
+
+    while (
+      i > 0 &&
+      j > 0
+    ) {
+      if (
+        originalWords[i - 1] ===
+        spokenWords[j - 1]
+      ) {
+        lcsItems.unshift({
+          origIdx: i - 1,
+          spokenIdx: j - 1
+        });
+
         i--;
         j--;
-      } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+      } else if (
+        dp[i - 1][j] >=
+        dp[i][j - 1]
+      ) {
         i--;
       } else {
         j--;
       }
     }
 
-    // Build alignment from LCS matches
+    // ========================================================
+    // BUILD ALIGNMENT AROUND MATCHES
+    // ========================================================
+
     let lastOrig = 0;
     let lastSpoken = 0;
 
-    for (const item of lcsItems) {
-      // Handle gaps before this match
-      const origGap = item.origIdx - lastOrig;
-      const spokenGap = item.spokenIdx - lastSpoken;
-      const minGap = Math.min(origGap, spokenGap);
+    for (
+      const item of lcsItems
+    ) {
+      const origGap =
+        item.origIdx -
+        lastOrig;
 
-      // Pair up as substitutions
-      for (let k = 0; k < minGap; k++) {
+      const spokenGap =
+        item.spokenIdx -
+        lastSpoken;
+
+      const minGap =
+        Math.min(
+          origGap,
+          spokenGap
+        );
+
+      // ------------------------------------------------------
+      // SUBSTITUTIONS
+      // ------------------------------------------------------
+
+      for (
+        let k = 0;
+        k < minGap;
+        k++
+      ) {
         alignment.push({
-          type: 'substitution',
-          origIdx: lastOrig + k,
-          spokenIdx: lastSpoken + k
+          type: "substitution",
+          origIdx:
+            lastOrig + k,
+          spokenIdx:
+            lastSpoken + k
         });
       }
 
-      // Remaining gaps
-      for (let k = minGap; k < origGap; k++) {
-        alignment.push({ type: 'deletion', origIdx: lastOrig + k });
-      }
-      for (let k = minGap; k < spokenGap; k++) {
-        alignment.push({ type: 'insertion', spokenIdx: lastSpoken + k });
+      // ------------------------------------------------------
+      // MISSING WORDS
+      // ------------------------------------------------------
+
+      for (
+        let k = minGap;
+        k < origGap;
+        k++
+      ) {
+        alignment.push({
+          type: "deletion",
+          origIdx:
+            lastOrig + k
+        });
       }
 
-      // The match itself
-      alignment.push({ type: 'match', origIdx: item.origIdx, spokenIdx: item.spokenIdx });
-      lastOrig = item.origIdx + 1;
-      lastSpoken = item.spokenIdx + 1;
+      // ------------------------------------------------------
+      // EXTRA WORDS
+      // ------------------------------------------------------
+
+      for (
+        let k = minGap;
+        k < spokenGap;
+        k++
+      ) {
+        alignment.push({
+          type: "insertion",
+          spokenIdx:
+            lastSpoken + k
+        });
+      }
+
+      // ------------------------------------------------------
+      // MATCH
+      // ------------------------------------------------------
+
+      alignment.push({
+        type: "match",
+        origIdx:
+          item.origIdx,
+        spokenIdx:
+          item.spokenIdx
+      });
+
+      lastOrig =
+        item.origIdx + 1;
+
+      lastSpoken =
+        item.spokenIdx + 1;
     }
 
-    // Handle tail
-    const tailOrigGap = origWords.length - lastOrig;
-    const tailSpokenGap = spokenWords.length - lastSpoken;
-    const tailMin = Math.min(tailOrigGap, tailSpokenGap);
+    // ========================================================
+    // HANDLE REMAINING TAIL
+    // ========================================================
 
-    for (let k = 0; k < tailMin; k++) {
+    const remainingOrig =
+      originalWords.length -
+      lastOrig;
+
+    const remainingSpoken =
+      spokenWords.length -
+      lastSpoken;
+
+    const minTail =
+      Math.min(
+        remainingOrig,
+        remainingSpoken
+      );
+
+    // --------------------------------------------------------
+    // SUBSTITUTIONS
+    // --------------------------------------------------------
+
+    for (
+      let k = 0;
+      k < minTail;
+      k++
+    ) {
       alignment.push({
-        type: 'substitution',
-        origIdx: lastOrig + k,
-        spokenIdx: lastSpoken + k
+        type: "substitution",
+        origIdx:
+          lastOrig + k,
+        spokenIdx:
+          lastSpoken + k
       });
     }
-    for (let k = tailMin; k < tailOrigGap; k++) {
-      alignment.push({ type: 'deletion', origIdx: lastOrig + k });
+
+    // --------------------------------------------------------
+    // MISSING
+    // --------------------------------------------------------
+
+    for (
+      let k = minTail;
+      k < remainingOrig;
+      k++
+    ) {
+      alignment.push({
+        type: "deletion",
+        origIdx:
+          lastOrig + k
+      });
     }
-    for (let k = tailMin; k < tailSpokenGap; k++) {
-      alignment.push({ type: 'insertion', spokenIdx: lastSpoken + k });
+
+    // --------------------------------------------------------
+    // EXTRA
+    // --------------------------------------------------------
+
+    for (
+      let k = minTail;
+      k < remainingSpoken;
+      k++
+    ) {
+      alignment.push({
+        type: "insertion",
+        spokenIdx:
+          lastSpoken + k
+      });
     }
 
     return alignment;
+  }
+
+  // ==========================================================
+  // SIMPLE MATCH CHECK
+  // ==========================================================
+
+  /**
+   * Returns true if both texts contain
+   * exactly the same normalized words.
+   */
+
+  static isExactMatch(
+    original,
+    spoken
+  ) {
+    const originalWords =
+      this.tokenize(original);
+
+    const spokenWords =
+      this.tokenize(spoken);
+
+    return this.tokensEqual(
+      originalWords,
+      spokenWords
+    );
+  }
+
+  // ==========================================================
+  // GET SCORE ONLY
+  // ==========================================================
+
+  static getScore(
+    original,
+    spoken
+  ) {
+    return this.compare(
+      original,
+      spoken
+    ).matchPercentage;
+  }
+
+  // ==========================================================
+  // GET ACCURACY ONLY
+  // ==========================================================
+
+  static getAccuracy(
+    original,
+    spoken
+  ) {
+    return this.compare(
+      original,
+      spoken
+    ).accuracy;
   }
 }
